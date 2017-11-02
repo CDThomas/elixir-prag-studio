@@ -1,0 +1,3 @@
+<h1>Show bear</h1>
+
+<p><%= bear.name %> <%= if bear.hibernating,  do: "is", else: "is not"%> hibernating</p>
