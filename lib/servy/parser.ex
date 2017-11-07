@@ -39,6 +39,9 @@ defmodule Servy.Parser do
   def parse_params("application/x-www-form-urlencoded", params_string) do
     params_string |> String.trim() |> URI.decode_query()
   end
+  def parse_params("application/json", params_string) do
+    Poison.Parser.parse!(params_string)
+  end
   def parse_params(_content_type, _params_string), do: %{}
 
   # Recursive version of parse_headers

@@ -23,9 +23,15 @@ defmodule Servy.Handler do
   * go back over recursion exercises (and maybe vid, too)
   """
 
-  import Servy.Plugins, only: [rewrite_path: 1, log: 1, track: 1]
+  import Servy.Plugins, only: [
+    rewrite_path: 1,
+    log: 1,
+    track: 1,
+    put_content_length: 1,
+  ]
   import Servy.Parser, only: [parse: 1]
   alias Servy.{Conv, BearController}
+  alias Servy.Api.BearController, as: ApiBearController
 
   @pages_path Path.expand("../../pages", __DIR__)
 
@@ -37,6 +43,7 @@ defmodule Servy.Handler do
     |> log()
     |> route()
     |> track()
+    |> put_content_length()
     |> format_response()
   end
 
@@ -71,6 +78,12 @@ defmodule Servy.Handler do
   def route(%Conv{method: "DELETE", path: "/bears/" <> _id} = conv) do
     BearController.delete(conv, conv.params)
   end
+  def route(%Conv{method: "GET", path: "/api/bears"} = conv) do
+    ApiBearController.index(conv)
+  end
+  def route(%Conv{method: "POST", path: "/api/bears", params: params} = conv) do
+    ApiBearController.create(conv, params)
+  end
   def route(%Conv{path: path} = conv) do
     %{conv | status: 404, resp_body: "No #{path} here"}
   end
@@ -88,14 +101,21 @@ defmodule Servy.Handler do
   @doc """
   Format the response map as valid HTTP response string
   """
-  def format_response(%Conv{} = conv) do
+  def format_response(%Conv{resp_headers: resp_headers, resp_body: resp_body} = conv) do
     """
     HTTP/1.1 #{Conv.full_status(conv)}\r
-    Content-Type: text/html\r
-    Content-Length: #{byte_size(conv.resp_body)}\r
+    #{format_resp_headers(resp_headers)}
     \r
-    #{conv.resp_body}
+    #{resp_body}
     """
+  end
+
+  defp format_resp_headers(resp_headers) do
+    resp_headers
+      |> Enum.map(fn {key, val} -> "#{key}: #{val}\r" end)
+      |> Enum.sort() # How are headers actually sorted? Does it matter? This matches the tests
+      |> Enum.reverse()
+      |> Enum.join("\n")
   end
 end
 

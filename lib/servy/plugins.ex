@@ -21,5 +21,9 @@ defmodule Servy.Plugins do
     conv |> inspect() |> Logger.info()
     conv
   end
+
+  def put_content_length(%Conv{resp_body: resp_body} = conv) do
+    Conv.put_resp_header(conv, "Content-Length", byte_size(resp_body))
+  end
 end
 
