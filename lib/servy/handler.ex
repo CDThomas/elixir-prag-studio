@@ -75,6 +75,13 @@ defmodule Servy.Handler do
     |> File.read()
     |> handle_file(conv)
   end
+  def route(%Conv{method: "GET", path: "/pages/" <> name} = conv) do
+    @pages_path
+    |> Path.join("#{name}.md")
+    |> File.read()
+    |> handle_file(conv)
+    |> markdown_to_html()
+  end
   def route(%Conv{method: "DELETE", path: "/bears/" <> _id} = conv) do
     BearController.delete(conv, conv.params)
   end
@@ -97,6 +104,11 @@ defmodule Servy.Handler do
   def handle_file({:error, reason}, %Conv{} = conv) do
     %{conv | status: 500, resp_body: "Error: #{reason}"}
   end
+
+  def markdown_to_html(%Conv{status: 200, resp_body: html} = conv) do
+    %{conv | resp_body: Earmark.as_html!(html)}
+  end
+  def markdown_to_html(%Conv{} = conv), do: conv
 
   @doc """
   Format the response map as valid HTTP response string

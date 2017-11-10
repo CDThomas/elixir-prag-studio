@@ -224,7 +224,7 @@ defmodule Handler.HandlerTest do
   end
 
   test "POST /api/bears" do
-  request = """
+    request = """
     POST /api/bears HTTP/1.1\r
     Host: example.com\r
     User-Agent: ExampleBrowser/1.0\r
@@ -244,6 +244,28 @@ defmodule Handler.HandlerTest do
     \r
     Created a Polar bear named Breezly!
     """
+  end
+
+  test "GET /pages/:page" do
+    request = """
+    GET /pages/turtles HTTP/1.1\r
+    Host: example.com\r
+    User-Agent: ExampleBrowser/1.0\r
+    Accept: */*\r
+    \r
+    """
+
+    response = Handler.handle(request)
+
+    expected_response = """
+    HTTP/1.1 200 OK\r
+    Content-Type: text/html\r
+    Content-Length: 24\r
+    \r
+    <h1>I like turtles</h1>\n\n\n
+    """
+
+    assert remove_whitespace(response) == remove_whitespace(expected_response)
   end
 
   defp remove_whitespace(text) do
