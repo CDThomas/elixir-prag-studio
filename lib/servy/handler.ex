@@ -50,6 +50,15 @@ defmodule Servy.Handler do
   @doc """
   Transform request response into a new map with a response body
   """
+  def route(%Conv{method: "GET", path: "/kaboom"}) do
+    raise "Kaboom"
+  end
+  def route(%Conv{method: "GET", path: "/hibernate/" <> time} = conv) do
+    time = time |> String.to_integer()
+    time |> :timer.sleep()
+
+    %{conv | status: 200, resp_body: "Slept for #{time / 1_000} seconds"}
+  end
   def route(%Conv{method: "GET", path: "/wildthings"} = conv) do
     %{conv | status: 200, resp_body: "Bears, Lions, Tigers"}
   end
