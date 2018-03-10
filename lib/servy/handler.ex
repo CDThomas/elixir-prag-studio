@@ -30,7 +30,7 @@ defmodule Servy.Handler do
     put_content_length: 1,
   ]
   import Servy.Parser, only: [parse: 1]
-  alias Servy.{Conv, BearController, VideoCam}
+  alias Servy.{Conv, BearController, VideoCam, Tracker}
   alias Servy.Api.BearController, as: ApiBearController
 
   @pages_path Path.expand("../../pages", __DIR__)
@@ -50,19 +50,16 @@ defmodule Servy.Handler do
   @doc """
   Transform request response into a new map with a response body
   """
-  def route(%Conv{method: "GET", path: "/snapshots"} = conv) do
-    parent = self()
-
+  def route(%Conv{method: "GET", path: "/sensors"} = conv) do
+    task = Task.async(fn -> Tracker.get_location("bigfoot") end)
     snapshots =
       ["cam-1", "cam-2", "cam-3"]
-        |> Enum.map(fn cam ->
-          spawn(fn -> send(parent, {:result, VideoCam.get_snapshot(cam)}) end)
-        end)
-        |> Enum.map(fn _pid ->
-          receive do {:result, filename} -> filename end
-        end)
+        |> Enum.map(&Task.async(fn -> VideoCam.get_snapshot(&1) end))
+        |> Enum.map(fn task -> Task.await(task) end)
 
-    %{ conv | status: 200, resp_body: inspect(snapshots) }
+    bigfoot_location = Task.await(task)
+
+    %{ conv | status: 200, resp_body: inspect({ bigfoot_location, snapshots }) }
   end
   def route(%Conv{method: "GET", path: "/kaboom"}) do
     raise "Kaboom"
