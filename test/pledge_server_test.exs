@@ -35,4 +35,12 @@ defmodule PledgeServertest do
 
     assert PledgeServer.total_pledged() == 120
   end
+
+  test "Can clear the cache" do
+    PledgeServer.create_pledge("larry", 10)
+    PledgeServer.clear()
+
+    assert PledgeServer.recent_pledges() == []
+    assert PledgeServer.total_pledged() == 0
+  end
 end
