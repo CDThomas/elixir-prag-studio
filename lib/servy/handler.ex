@@ -30,7 +30,7 @@ defmodule Servy.Handler do
     put_content_length: 1,
   ]
   import Servy.Parser, only: [parse: 1]
-  alias Servy.{Conv, BearController, VideoCam, Tracker}
+  alias Servy.{Conv, BearController}
   alias Servy.Api.BearController, as: ApiBearController
 
   @pages_path Path.expand("../../pages", __DIR__)
@@ -61,15 +61,9 @@ defmodule Servy.Handler do
     Servy.PledgeController.index(conv)
   end
   def route(%Conv{method: "GET", path: "/sensors"} = conv) do
-    task = Task.async(fn -> Tracker.get_location("bigfoot") end)
-    snapshots =
-      ["cam-1", "cam-2", "cam-3"]
-        |> Enum.map(&Task.async(fn -> VideoCam.get_snapshot(&1) end))
-        |> Enum.map(fn task -> Task.await(task) end)
+    sensor_data = Servy.SensorServer.get_sensor_data()
 
-    bigfoot_location = Task.await(task)
-
-    %{ conv | status: 200, resp_body: inspect({ bigfoot_location, snapshots }) }
+    %{ conv | status: 200, resp_body: inspect(sensor_data) }
   end
   def route(%Conv{method: "GET", path: "/kaboom"}) do
     raise "Kaboom"

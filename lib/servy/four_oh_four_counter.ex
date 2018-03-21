@@ -23,40 +23,50 @@ defmodule Servy.FourOhFourCounter.GenericServer do
       {:cast, message} ->
         new_state = callback_module.handle_cast(message, state)
         listen_loop(new_state, callback_module)
-      _ -> listen_loop(state, callback_module)
+      message ->
+        new_state = callback_module.handle_info(message, state)
+        listen_loop(new_state, callback_module)
     end
   end
 end
 
 defmodule Servy.FourOhFourCounter do
-  alias Servy.FourOhFourCounter.GenericServer
+  use GenServer
 
   @name __MODULE__
 
   # Client
-  def start, do: GenericServer.start(__MODULE__, %{}, @name)
+  def start, do: GenServer.start(__MODULE__, %{}, name: @name)
+
+  def init(state), do: {:ok, state}
 
   def bump_count(path) do
-    GenericServer.cast(@name, {:bump_count, path})
+    GenServer.cast(@name, {:bump_count, path})
   end
 
   def get_count(path) do
-    GenericServer.call(@name, {:get_count, path})
+    GenServer.call(@name, {:get_count, path})
   end
 
   def get_counts do
-    GenericServer.call(@name, :get_counts)
+    GenServer.call(@name, :get_counts)
   end
 
-  def handle_call({:get_count, path}, state) do
+  # Server
+  def handle_call({:get_count, path}, _from, state) do
     count = Map.get(state, path, 0)
-    {count, state}
+    {:reply, count, state}
   end
-  def handle_call(:get_counts, state) do
-    {state, state}
+  def handle_call(:get_counts, _from, state) do
+    {:reply, state, state}
   end
 
   def handle_cast({:bump_count, path}, state) do
-    Map.update(state, path, 1, &(&1 + 1))
+    {:noreply, Map.update(state, path, 1, &(&1 + 1))}
+  end
+
+  def handle_info(message, state) do
+    IO.puts("Unexpected message: #{inspect(message)}")
+    {:noreply, state}
   end
 end
