@@ -5,13 +5,15 @@ defmodule Servy.SensorServer do
   use GenServer
 
   defmodule State do
-    defstruct sensor_data: %{}, refresh_interval: :timer.seconds(5), timer_ref: nil
+    defstruct sensor_data: %{}, refresh_interval: nil, timer_ref: nil
   end
 
   # Client Interface
 
-  def start do
-    GenServer.start(__MODULE__, %State{}, name: @name)
+  def start_link(opts) do
+    refresh_interval = Keyword.get(opts, :refresh_interval, :timer.minutes(5))
+    IO.puts("Starting the sensor server...")
+    GenServer.start_link(__MODULE__, %State{refresh_interval: refresh_interval}, name: @name)
   end
 
   def get_sensor_data do
